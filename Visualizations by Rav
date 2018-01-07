@@ -1,0 +1,140 @@
+---
+title: "Hobby Airport - EDA"
+author: "RavMin"
+date: "March 17, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Houston Hobby Airport data
+
+#For this month's data jam meet up, we worked with data from Monday at the Houston Hobby airport. This data is sourced from FlightAware's API.
+
+#We have the data available in csv, each in their respective directories.
+
+```{r}
+
+make_csv_url <- function(name){
+  url <- paste('https://raw.githubusercontent.com/houstondatavis/data-jam-february-2017/data-pipeline/', name, '.csv', sep='')
+
+  return(url)
+}
+
+flights <- read.csv(make_csv_url('flights'))
+
+routes <- read.csv(make_csv_url('routes'))
+
+tracks <- read.csv(make_csv_url('tracks'))
+
+weather <- read.csv(make_csv_url('weather'))
+
+```
+
+# Checking the unique flight$ident in flights data
+```{r}
+dim(flights)
+flight_numbers <- unique(flights$ident, incomparables = FALSE)
+
+```
+
+# Extract the flight ident from the routes flight_id
+```{r}
+routes$flight_no <- substring(routes$flight_id, 1,7)
+head(routes)
+
+```
+# Extract flight ident no from the tracks flight_id
+
+```{r}
+tracks$flight_no <- substring(tracks$flight_id, 1,7)
+head(tracks)
+
+
+```
+
+```{r}
+library(leaflet)
+library(maps)
+map_usa = map("state", fill = TRUE, plot = FALSE)
+m = leaflet(map_usa) %>% addTiles() %>%
+  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
+  
+m
+
+```
+
+
+##Plotting the route plan of flights into Houston 
+```{r}
+
+m %>%
+  addPolylines(data = routes, lat = ~ latitude, lng = ~ longitude, color="red", , weight = 1)%>% 
+  setView(-95.27889, 29.64542, zoom = 6)%>%
+  addMarkers(-95.27889, 29.64542, popup = "Destination Houston")
+
+
+
+```
+
+##Plotting the Tracks (Flight-specific location tracking data) for all flights into Houston 
+
+```{r}
+
+m %>%
+  addPolylines(data = tracks, lat = ~ latitude, lng = ~ longitude, color="red", , weight = 1)%>% 
+  setView(-95.27889, 29.64542, zoom = 6)%>%
+  addMarkers(-95.27889, 29.64542, popup = "Destination Houston")
+
+```
+
+### We can see that flight tracks ar too different from their planned routes. Lets look deeper into a few individual flights
+
+## Plots for flight SWA4569
+```{r}
+
+route_SWA4569 <- subset(routes, flight_no == 'SWA4569')
+track_SWA4569 <- subset(tracks, flight_no == 'SWA4569')
+
+
+m %>%
+  addPolylines(data = route_SWA4569, lat = ~ latitude, lng = ~ longitude, color="green", weight = 4)%>%   addPolylines(data = track_SWA4569, lat = ~ latitude, lng = ~ longitude, color="blue", weight = 4)%>% 
+  setView(-95.27889, 29.64542, zoom = 6)%>%
+  addMarkers(-95.27889, 29.64542, popup = "Destination Houston")
+
+}
+```
+
+## Plots for flight SWA3020
+
+```{r}
+route_SWA3020 <- subset(routes, flight_no == 'SWA3020')
+track_SWA3020 <- subset(tracks, flight_no == 'SWA3020')
+
+for(row in 1:length(route_SWA3020)){
+  if (route_SWA3020$order[row] == 0){
+    origin_lat = route_SWA3020$latitude[row]
+    origin_long = route_SWA3020$longitude[row]
+  }
+}
+origin_lat
+origin_long
+
+
+```
+
+```{r}
+m %>%
+  addPolylines(data = route_SWA3020, lat = ~ latitude, lng = ~ longitude, color="green", weight = 4)%>%   addPolylines(data = track_SWA3020, lat = ~ latitude, lng = ~ longitude, color="blue", weight = 4)%>% 
+  setView(-95.27889, 29.64542, zoom = 8)%>%
+  addMarkers(-86.67817, 36.12447, popup = "Origin Airport")%>%
+  addMarkers(-95.27889, 29.64542, popup = "Destination Houston") 
+
+```
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
